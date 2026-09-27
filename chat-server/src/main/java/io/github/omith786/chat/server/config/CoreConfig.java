@@ -12,6 +12,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.Clock;
+import java.time.Duration;
 
 /** Beans that do not belong to any one feature. */
 @Configuration(proxyBeanMethods = false)
@@ -22,10 +23,21 @@ public class CoreConfig {
     /** Minimum secret length, so a typo such as "changeme" is caught at startup. */
     static final int MIN_SECRET_LENGTH = 32;
 
+    /**
+     * The system clock, ticking in whole microseconds.
+     *
+     * <p>H2 and PostgreSQL store timestamps to the microsecond, but on Linux the JVM clock has
+     * nanosecond resolution. Without the tick, a message delivered live would carry a more precise
+     * {@code sentAt} than the same message read back from history.
+     */
     @Bean
     @ConditionalOnMissingBean
     Clock clock() {
-        return Clock.systemUTC();
+        return systemClock();
+    }
+
+    static Clock systemClock() {
+        return Clock.tick(Clock.systemUTC(), Duration.ofNanos(1_000));
     }
 
     @Bean
