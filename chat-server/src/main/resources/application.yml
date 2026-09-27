@@ -1,0 +1,64 @@
+# Local defaults: single instance, in-memory broker, H2 database file under ./data.
+# Every value can be overridden with an environment variable (e.g. CHAT_SESSION_SECRET).
+spring:
+  application:
+    name: chat-server
+  datasource:
+    url: jdbc:h2:file:${CHAT_DATA_DIR:./data}/chat;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password: ""
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    locations: classpath:db/migration
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  port: ${PORT:8080}
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  health:
+    # Not useful for a chat server, and they would publish local paths.
+    diskspace:
+      enabled: false
+    ssl:
+      enabled: false
+  info:
+    env:
+      enabled: false
+
+chat:
+  # Leave blank locally; must be set (32+ characters) whenever more than one instance runs.
+  session:
+    secret: ${CHAT_SESSION_SECRET:}
+    ttl: 12h
+  broker:
+    type: local
+  presence:
+    snapshot-interval: 60s
+    expiry: 180s
+  limits:
+    connections-per-user: 5
+    rooms-per-connection: 50
+    max-rooms: 200
+    auth-timeout: 10s
+    history-page-size: 50
+    max-history-page-size: 100
+
+logging:
+  level:
+    com.azure: WARN

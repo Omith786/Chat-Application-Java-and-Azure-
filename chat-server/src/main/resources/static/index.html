@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Chat</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="module" src="app.js"></script>
+</head>
+<body>
+<section id="login" class="login" hidden>
+    <form id="login-form" class="login-card" autocomplete="off">
+        <h1>Chat</h1>
+        <p class="muted">Pick a username to join. No password is needed: any name that is not online right now is yours.</p>
+        <label for="username">Username</label>
+        <input id="username" name="username" required minlength="3" maxlength="20"
+               pattern="[A-Za-z0-9_\-]{3,20}" placeholder="e.g. alice" autofocus>
+        <p class="hint">3 to 20 letters, digits, '_' or '-'.</p>
+        <button type="submit">Join</button>
+        <p id="login-error" class="error" role="alert"></p>
+    </form>
+</section>
+
+<div id="app" class="app" hidden>
+    <aside class="sidebar">
+        <header class="me">
+            <span class="status-dot" id="status-dot" title="Disconnected"></span>
+            <strong id="me-name"></strong>
+            <button id="sign-out" class="link" type="button">Sign out</button>
+        </header>
+
+        <nav>
+            <div class="section-title">
+                <span>Rooms</span>
+                <button id="new-room" class="icon" type="button" title="Create a room" aria-label="Create a room">+</button>
+            </div>
+            <ul id="room-list" class="channel-list"></ul>
+
+            <div class="section-title"><span>Direct messages</span></div>
+            <ul id="dm-list" class="channel-list"></ul>
+
+            <div class="section-title"><span>Online</span><span id="online-count" class="count"></span></div>
+            <ul id="online-list" class="user-list"></ul>
+        </nav>
+        <footer class="instance muted" id="instance"></footer>
+    </aside>
+
+    <main class="main">
+        <header class="channel-header">
+            <div>
+                <h2 id="channel-title">Choose a room</h2>
+                <p id="channel-subtitle" class="muted"></p>
+            </div>
+            <button id="leave-room" type="button" class="secondary" hidden>Leave</button>
+        </header>
+        <div id="banner" class="banner" hidden></div>
+        <div id="messages" class="messages" aria-live="polite">
+            <button id="load-older" type="button" class="secondary load-older" hidden>Load older messages</button>
+            <ol id="message-list" class="message-list"></ol>
+        </div>
+        <div id="typing" class="typing muted"></div>
+        <form id="composer" class="composer">
+            <textarea id="message-input" rows="1" maxlength="2000" placeholder="Message" disabled
+                      aria-label="Message"></textarea>
+            <button type="submit" id="send" disabled>Send</button>
+        </form>
+    </main>
+</div>
+
+<dialog id="room-dialog">
+    <form id="room-form" method="dialog">
+        <h3>Create a room</h3>
+        <label for="room-name">Name</label>
+        <input id="room-name" required minlength="2" maxlength="40">
+        <label for="room-description">Description (optional)</label>
+        <input id="room-description" maxlength="200">
+        <p id="room-error" class="error" role="alert"></p>
+        <menu>
+            <button type="button" class="secondary" id="room-cancel">Cancel</button>
+            <button type="submit">Create</button>
+        </menu>
+    </form>
+</dialog>
+</body>
+</html>

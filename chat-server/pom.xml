@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.omith786</groupId>
+        <artifactId>chat-parent</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>chat-server</artifactId>
+    <name>chat-server</name>
+    <description>Spring Boot WebSocket chat server with rooms, direct messages, presence and message history.</description>
+
+    <properties>
+        <!-- Overridable on the command line, e.g. -Dazure.appName=my-chat-app -->
+        <azure.subscriptionId></azure.subscriptionId>
+        <azure.resourceGroup>rg-chat</azure.resourceGroup>
+        <azure.appName>chat-omith</azure.appName>
+        <azure.region>uksouth</azure.region>
+        <azure.pricingTier>F1</azure.pricingTier>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- PostgreSQL 17 binaries for the embedded database used by PostgresProfileTest. -->
+            <dependency>
+                <groupId>io.zonky.test.postgres</groupId>
+                <artifactId>embedded-postgres-binaries-bom</artifactId>
+                <version>17.11.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.github.omith786</groupId>
+            <artifactId>chat-protocol</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Azure Web PubSub: the service SDK publishes to a group and mints client
+             tokens; the client SDK lets each server instance subscribe to that group. -->
+        <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-messaging-webpubsub</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-messaging-webpubsub-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-identity</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.github.omith786</groupId>
+            <artifactId>chat-cli</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.zonky.test</groupId>
+            <artifactId>embedded-postgres</artifactId>
+            <version>2.2.2</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>chat-server</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.springframework.boot</groupId>
+                            <artifactId>spring-boot-configuration-processor</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
+            <!-- Load Mockito as a Java agent instead of letting it self-attach at runtime,
+                 which recent JDKs warn about and will eventually forbid. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>properties</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>"-javaagent:${org.mockito:mockito-core:jar}" -Xshare:off</argLine>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <!-- Opt-in deployment to Azure App Service, run from the project root:
+             ./mvnw -P azure-deploy -pl chat-server -am package -DskipTests -Dazure.appName=<name>
+             Authentication comes from the Azure CLI (az login). Nothing here runs in a normal build. -->
+        <profile>
+            <id>azure-deploy</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.microsoft.azure</groupId>
+                        <artifactId>azure-webapp-maven-plugin</artifactId>
+                        <version>2.14.1</version>
+                        <executions>
+                            <execution>
+                                <id>deploy-to-app-service</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>deploy</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <schemaVersion>v2</schemaVersion>
+                            <!-- The plugin reports usage to Microsoft unless told not to. -->
+                            <allowTelemetry>false</allowTelemetry>
+                            <subscriptionId>${azure.subscriptionId}</subscriptionId>
+                            <resourceGroup>${azure.resourceGroup}</resourceGroup>
+                            <appName>${azure.appName}</appName>
+                            <region>${azure.region}</region>
+                            <pricingTier>${azure.pricingTier}</pricingTier>
+                            <runtime>
+                                <os>Linux</os>
+                                <webContainer>Java SE</webContainer>
+                                <javaVersion>Java 21</javaVersion>
+                            </runtime>
+                            <appSettings>
+                                <property>
+                                    <name>SPRING_PROFILES_ACTIVE</name>
+                                    <value>azure</value>
+                                </property>
+                                <property>
+                                    <!-- App Service forwards traffic to port 80 inside the container. -->
+                                    <name>SERVER_PORT</name>
+                                    <value>80</value>
+                                </property>
+                            </appSettings>
+                            <deployment>
+                                <resources>
+                                    <resource>
+                                        <directory>${project.basedir}/target</directory>
+                                        <includes>
+                                            <include>chat-server.jar</include>
+                                        </includes>
+                                    </resource>
+                                </resources>
+                            </deployment>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

@@ -1,0 +1,29 @@
+# Test overrides, layered on top of the main application.yml (Spring loads
+# classpath:config/application.yml after classpath:application.yml): a private in-memory database per application context, a fixed session
+# secret and rate limits generous enough that functional tests never trip them (the rate-limit
+# tests lower them explicitly).
+spring:
+  datasource:
+    url: jdbc:h2:mem:chat-${random.uuid};DB_CLOSE_DELAY=-1
+
+chat:
+  session:
+    secret: test-secret-that-is-at-least-32-characters-long
+  rate-limits:
+    messages:
+      capacity: 1000
+      refill-period: 1ms
+    typing:
+      capacity: 1000
+      refill-period: 1ms
+    sessions:
+      capacity: 1000
+      refill-period: 1ms
+    rooms:
+      capacity: 1000
+      refill-period: 1ms
+
+logging:
+  level:
+    root: WARN
+    io.github.omith786: INFO

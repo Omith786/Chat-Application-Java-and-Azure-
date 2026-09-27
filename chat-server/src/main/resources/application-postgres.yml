@@ -1,0 +1,6 @@
+# PostgreSQL instead of H2. Needed when several instances share one message history.
+spring:
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/chat}
+    username: ${DATABASE_USERNAME:chat}
+    password: ${DATABASE_PASSWORD:chat}

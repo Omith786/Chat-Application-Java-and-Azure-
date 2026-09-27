@@ -1,0 +1,22 @@
+# Build output
+target/
+
+# Local tools (the Maven distribution and repository used to bootstrap the wrapper)
+.tools/
+
+# Local H2 database files (created by the server under ./data)
+data/
+*.mv.db
+*.trace.db
+
+# Local secrets
+.env
+
+# IDEs and OS files
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+.DS_Store

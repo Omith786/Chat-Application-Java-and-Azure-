@@ -1,0 +1,22 @@
+# Azure App Service with Azure Web PubSub as the backplane between instances.
+# Combine with the postgres profile when scaling out: SPRING_PROFILES_ACTIVE=azure,postgres
+spring:
+  datasource:
+    # /home is App Service's persistent storage; fine for a single instance.
+    url: jdbc:h2:file:${CHAT_DATA_DIR:/home/data}/chat;DB_CLOSE_ON_EXIT=FALSE
+
+server:
+  # App Service terminates TLS and forwards X-Forwarded-* headers; trusting them lets the
+  # WebSocket same-origin check see the public https origin.
+  forward-headers-strategy: native
+
+chat:
+  allowed-origins: ${CHAT_ALLOWED_ORIGINS:}
+  broker:
+    type: azure-web-pubsub
+    azure:
+      connection-string: ${AZURE_WEBPUBSUB_CONNECTION_STRING:}
+      endpoint: ${AZURE_WEBPUBSUB_ENDPOINT:}
+      hub: ${AZURE_WEBPUBSUB_HUB:chat}
+      group: backplane
+      reliable: true
